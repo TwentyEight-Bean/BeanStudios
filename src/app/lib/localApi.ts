@@ -145,6 +145,9 @@ export async function updateBookingStatus(id: string, status: string): Promise<v
     body: JSON.stringify({ status }),
   });
 }
+export async function getBookingById(id: string): Promise<Booking | null> {
+  return apiFetch(`/api/bookings/${id}`);
+}
 
 // Users
 export async function getAllUsers(): Promise<UserProfile[]> { return apiFetch("/api/users"); }
@@ -200,6 +203,13 @@ export async function saveUserSettings(settings: UserSettings): Promise<void> {
     body: JSON.stringify(settings),
   });
 }
+export async function saveUserProfile(profile: any): Promise<void> {
+  await apiFetch("/api/settings/profile", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(profile),
+  });
+}
 
 // Portfolio & Projects
 export async function getPortfolio(userId: string): Promise<string[]> { return apiFetch(`/api/portfolio/${userId}`); }
@@ -230,6 +240,9 @@ export async function markNotificationRead(id: string): Promise<void> {
 export async function markAllNotificationsRead(): Promise<void> {
   await apiFetch("/api/notifications/read-all", { method: "POST" });
 }
+export async function clearReadNotifications(): Promise<void> {
+  await apiFetch("/api/notifications/clear", { method: "DELETE" });
+}
 export async function getUnreadNotificationCount(): Promise<number> {
   const notifs = await getNotifications();
   return notifs.filter(n => !n.read).length;
@@ -237,6 +250,26 @@ export async function getUnreadNotificationCount(): Promise<number> {
 
 // Analytics (Admin Only)
 export async function getAnalytics() { return apiFetch("/api/analytics"); }
+
+// Chat
+export async function getConversations(): Promise<any[]> { return apiFetch("/api/chat"); }
+export async function getOrCreateConversation(participantId: string): Promise<any> {
+  return apiFetch("/api/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ participantId }),
+  });
+}
+export async function getChatMessages(conversationId: string): Promise<any[]> {
+  return apiFetch(`/api/chat/${conversationId}/messages`);
+}
+export async function sendChatMessage(conversationId: string, text: string): Promise<any> {
+  return apiFetch(`/api/chat/${conversationId}/messages`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text }),
+  });
+}
 
 // No longer needed but kept for structural compatibility
 export function seedAll() {}
