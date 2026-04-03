@@ -1,0 +1,5 @@
+[project]
+project_id = "XJwIlIXgJ7Vny0pLXDN8pU"
+
+[functions.server]
+verify_jwt = false

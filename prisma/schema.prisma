@@ -1,0 +1,239 @@
+// This is your Prisma schema file for BEAN / StudioBook Vietnam
+// Database: Neon PostgreSQL
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+}
+
+// ── Auth & Users ────────────────────────────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  name          String
+  email         String    @unique
+  passwordHash  String
+  role          String    @default("User")
+  avatar        String    @default("")
+  tag           String    @default("Newbie")
+  tagColor      String    @default("#6B7280")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  bookingsAsUser    Booking[]      @relation("UserBookings")
+  feedPosts         FeedPost[]
+  feedComments      FeedComment[]
+  notifications     Notification[]
+  projects          Project[]
+  settings          UserSettings?
+  sentMessages      ChatMessage[]  @relation("SenderMessages")
+
+  @@map("users")
+}
+
+// ── Creators ────────────────────────────────────────────────────────────────
+
+
+// ── Creators ────────────────────────────────────────────────────────────────
+
+model Creator {
+  id        String   @id @default(cuid())
+  name      String
+  role      String
+  jobs      Int      @default(0)
+  rating    Float    @default(5.0)
+  img       String
+  tag       String   @default("Newbie")
+  tagColor  String   @default("#6B7280")
+  tagBg     String   @default("#F3F4F6")
+  price     String
+  specialty String[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  bookings      Booking[]      @relation("CreatorBookings")
+  conversations Conversation[]
+
+  @@map("creators")
+}
+
+// ── Bookings ────────────────────────────────────────────────────────────────
+
+model Booking {
+  id           String   @id @default(cuid())
+  userId       String
+  userName     String
+  userEmail    String
+  creatorId    String
+  creatorName  String
+  creatorRole  String
+  creatorImg   String
+  serviceTitle String
+  price        String
+  date         String
+  time         String
+  duration     String
+  note         String?
+  status       String   @default("pending") // pending, confirmed, completed, cancelled
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user    User    @relation("UserBookings", fields: [userId], references: [id], onDelete: Cascade)
+  creator Creator @relation("CreatorBookings", fields: [creatorId], references: [id], onDelete: Cascade)
+
+  @@map("bookings")
+}
+
+// ── Blog Posts ──────────────────────────────────────────────────────────────
+
+model BlogPost {
+  id              String   @id @default(cuid())
+  title           String
+  slug            String   @unique
+  excerpt         String
+  author          String
+  authorId        String
+  avatar          String
+  img             String
+  date            String
+  readTime        String
+  category        String
+  tags            String[]
+  content         String   @db.Text
+  status          String   @default("pending") // pending, published
+  // SEO fields
+  metaTitle       String?
+  metaDescription String?
+  canonicalUrl    String?
+  ogImage         String?
+  publishedAt     DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("blog_posts")
+}
+
+// ── Feed ────────────────────────────────────────────────────────────────────
+
+model FeedPost {
+  id        Int      @id @default(autoincrement())
+  userId    String
+  userName  String
+  userRole  String
+  userAvatar String
+  img       String
+  caption   String
+  likes     Int      @default(0)
+  time      String
+  tags      String[]
+  isVideo   Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user     User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comments FeedComment[]
+
+  @@map("feed_posts")
+}
+
+model FeedComment {
+  id        String   @id @default(cuid())
+  postId    Int
+  userId    String
+  userName  String
+  userAvatar String
+  text      String
+  createdAt DateTime @default(now())
+
+  post FeedPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("feed_comments")
+}
+
+// ── Chat ────────────────────────────────────────────────────────────────────
+
+model Conversation {
+  id        String   @id @default(cuid())
+  name      String
+  role      String
+  avatar    String
+  online    Boolean  @default(false)
+  creatorId String?
+  createdAt DateTime @default(now())
+
+  creator  Creator?      @relation(fields: [creatorId], references: [id], onDelete: SetNull)
+  messages ChatMessage[]
+
+  @@map("conversations")
+}
+
+model ChatMessage {
+  id             String   @id @default(cuid())
+  conversationId String
+  text           String
+  me             Boolean  @default(false)
+  senderId       String?
+  senderName     String
+  time           String
+  sentAt         DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User?        @relation("SenderMessages", fields: [senderId], references: [id], onDelete: SetNull)
+
+  @@map("chat_messages")
+}
+
+// ── Notifications ───────────────────────────────────────────────────────────
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String   // booking, message, system, promo
+  title     String
+  body      String
+  read      Boolean  @default(false)
+  link      String?
+  color     String   @default("#6366F1")
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+// ── Projects ────────────────────────────────────────────────────────────────
+
+model Project {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  status    String   @default("active")
+  date      String
+  img       String
+  budget    String
+  color     String   @default("#6366F1")
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("projects")
+}
+
+// ── User Settings ───────────────────────────────────────────────────────────
+
+model UserSettings {
+  id       String @id @default(cuid())
+  userId   String @unique
+  settings Json   @default("{}")
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_settings")
+}
