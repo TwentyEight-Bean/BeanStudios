@@ -4,9 +4,10 @@ import { auth } from "@/app/lib/auth";
 
 export async function GET(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await auth();
     if (!session?.user) {
       return new NextResponse("Unauthorized", { status: 401 });
@@ -14,7 +15,7 @@ export async function GET(
 
     const messages = await prisma.chatMessage.findMany({
       where: {
-        conversationId: params.id,
+        conversationId: id,
       },
       orderBy: {
         sentAt: "asc",
@@ -30,9 +31,10 @@ export async function GET(
 
 export async function POST(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await auth();
     if (!session?.user) {
       return new NextResponse("Unauthorized", { status: 401 });
@@ -45,7 +47,7 @@ export async function POST(
 
     const message = await prisma.chatMessage.create({
       data: {
-        conversationId: params.id,
+        conversationId: id,
         text,
         me: true,
         senderId: (session.user as any).id,
