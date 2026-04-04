@@ -4,7 +4,7 @@ import { auth } from "@/app/lib/auth";
 
 export async function GET(
   req: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: any
 ) {
   try {
     const { id } = await params;
