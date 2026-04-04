@@ -169,7 +169,7 @@ export function BookingPage() {
   });
 
   useEffect(() => {
-    setCreators(getCreators().slice(0, 6));
+    getCreators().then(res => setCreators(res.slice(0, 6))).catch(console.error);
   }, []);
 
   const pkg = PACKAGES.find(p => p.id === selectedPackage);

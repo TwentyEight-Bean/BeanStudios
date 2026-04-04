@@ -234,6 +234,7 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
   ], [profileTo]);
 
   const reloadNotifications = useCallback(async () => {
+    if (!isLoggedIn) return;
     try {
       const n = await getNotifications();
       const count = await getUnreadNotificationCount();
@@ -242,7 +243,7 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
     } catch (err) {
       console.error("Failed to reload notifications", err);
     }
-  }, []);
+  }, [isLoggedIn]);
 
   useEffect(() => {
     reloadNotifications();
@@ -513,18 +514,32 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-y-auto relative pb-24 lg:pb-0" style={{ background: "#07070F" }}>
-          <AnimatePresence mode="wait" initial={false}>
+        {/* Chat page gets full-height treatment (no scroll on main) */}
+        {pathname === "/tin-nhan" ? (
+          <main className="flex-1 flex flex-col overflow-hidden relative" style={{ background: "#0A0A14" }}>
             <motion.div
               key={pathname}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.15, ease: "linear" }}
-              className="min-h-full">
+              className="flex-1 flex flex-col" style={{ minHeight: 0 }}>
               {children}
             </motion.div>
-          </AnimatePresence>
-        </main>
+          </main>
+        ) : (
+          <main className="flex-1 overflow-y-auto relative pb-24 lg:pb-0" style={{ background: "#07070F" }}>
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.div
+                key={pathname}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.15, ease: "linear" }}
+                className="min-h-full">
+                {children}
+              </motion.div>
+            </AnimatePresence>
+          </main>
+        )}
 
         {/* ═══ Mobile Bottom Navigation ═══ */}
         <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-30 flex items-center justify-around px-1 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))]"

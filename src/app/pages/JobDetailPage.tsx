@@ -5,7 +5,7 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "motion/react";
 import { ArrowLeft, Send, Upload, Lock, CheckCircle, RotateCcw, User, MessageCircle, File, Sparkles, Clock, MapPin, DollarSign, Star, CreditCard, Download, Check, Loader2 } from "lucide-react";
 import { useFeatures } from "../context/FeatureContext";
-import { getBookingById, getChatMessages, sendChatMessage, type Booking, type ChatMessage } from "../lib/localApi";
+import { getBookingById, getChatMessages, sendChatMessage, type Booking } from "../lib/localApi";
 import { useEffect } from "react";
 import { toast } from "sonner";
 import { useAuth } from "../context/AuthContext";
@@ -40,28 +40,49 @@ export function JobDetailPage() {
   
   const [loading, setLoading] = useState(true);
   const [booking, setBooking] = useState<Booking | null>(null);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [messages, setMessages] = useState<any[]>([]);
   const [input, setInput]       = useState("");
   const [fileTab, setFileTab]   = useState<"details" | "files" | "chat" | "milestones" | "payment" | "review">("details");
 
   useEffect(() => {
     if (!id) return;
-    const b = getBookingById(id as string);
-    if (!b) {
-      toast.error("Không tìm thấy công việc này");
-      router.push("/cong-viec");
-      return;
-    }
-    setBooking(b);
-    setMessages(getChatMessages(`job_${id}`));
-    setLoading(false);
-  }, [id]);
+    let isMounted = true;
+    const fetchData = async () => {
+      try {
+        const b = await getBookingById(id as string);
+        if (!isMounted) return;
+        if (!b) {
+          toast.error("Không tìm thấy công việc này");
+          router.push("/cong-viec");
+          return;
+        }
+        setBooking(b);
+        const msgs = await getChatMessages(`job_${id}`);
+        if (isMounted) {
+          setMessages(msgs || []);
+          setLoading(false);
+        }
+      } catch (e) {
+        console.error(e);
+        if (isMounted) {
+          toast.error("Lỗi khi tải dự án");
+          router.push("/cong-viec");
+        }
+      }
+    };
+    fetchData();
+    return () => { isMounted = false; };
+  }, [id, router]);
 
-  const sendMsg = () => {
+  const sendMsg = async () => {
     if (!input.trim() || !id) return;
-    const newMsg = sendChatMessage(`job_${id}`, input.trim(), true, user?.name || "Tôi");
-    setMessages(prev => [...prev, newMsg]);
-    setInput("");
+    try {
+      const newMsg = await sendChatMessage(`job_${id}`, input.trim());
+      setMessages(prev => [...prev, newMsg]);
+      setInput("");
+    } catch (e) {
+      toast.error("Không thể gửi tin nhắn");
+    }
   };
 
   if (loading || !booking) {

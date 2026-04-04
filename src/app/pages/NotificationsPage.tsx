@@ -11,6 +11,7 @@ import {
   getNotifications, markNotificationRead, markAllNotificationsRead,
   clearReadNotifications, type Notification
 } from "../lib/localApi";
+import { useAuth } from "../context/AuthContext";
 
 const GRAD = "linear-gradient(135deg, #6366F1, #A855F7)";
 const NEON = "0 0 30px rgba(99,102,241,0.3)";
@@ -58,11 +59,20 @@ function groupByDate(notifications: Notification[]): Record<string, Notification
 }
 
 export function NotificationsPage() {
+  const { isLoggedIn } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [filter, setFilter] = useState("Tất Cả");
 
-  const reload = () => setNotifications(getNotifications());
-  useEffect(() => { reload(); }, []);
+  const reload = async () => {
+    if (!isLoggedIn) return;
+    try {
+      const data = await getNotifications();
+      setNotifications(data || []);
+    } catch {
+      setNotifications([]);
+    }
+  };
+  useEffect(() => { reload(); }, [isLoggedIn]);
 
   const filtered = notifications.filter(n => {
     if (filter === "Tất Cả") return true;

@@ -15,7 +15,6 @@ import {
   getAllBookings, updateBookingStatus as kvUpdateStatus,
   getAnalytics, getAllUsers, type UserProfile,
   getBlogPosts, approveBlogPost, deleteBlogPost, type BlogPost,
-  getPendingUsers,
 } from "../lib/localApi";
 
 // ── Design Tokens ─────────────────────────────────────────────────────────
@@ -182,17 +181,29 @@ export function AdminPage() {
   const [blogs, setBlogs]                 = useState<BlogPost[]>([]);
   const [analyticsData, setAnalyticsData] = useState<any[]>([]);
 
-  const fetchData = () => {
+  const fetchData = async () => {
     setLoading(true);
     try {
-      setBookings(getAllBookings());
-      setAnalyticsData(getAnalytics());
-      setAllUsers(getAllUsers());
-      setBlogs(getBlogPosts());
+      const [bks, analytics, users, bgPosts] = await Promise.all([
+        getAllBookings(),
+        getAnalytics(),
+        getAllUsers(),
+        getBlogPosts()
+      ]);
+      setBookings(bks || []);
+      setAnalyticsData(analytics || []);
+      setAllUsers(users || []);
+      setBlogs(bgPosts || []);
+    } catch (err) {
+      console.error(err);
     } finally { setLoading(false); }
   };
 
-  useEffect(() => { fetchData(); }, [isAuthInitialized]);
+  useEffect(() => {
+    if (isAuthInitialized && admin?.role === "Admin") {
+      fetchData();
+    }
+  }, [isAuthInitialized, admin]);
 
   const { totalRev, pendingCount, blogsCount } = useMemo(() => ({
     totalRev: bookings.filter(b => b.status === "completed").reduce((s, b) => s + (Number(b.price) || 0), 0),

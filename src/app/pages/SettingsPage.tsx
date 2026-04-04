@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   User, Bell, Lock, Eye, Monitor, Globe, Shield,
@@ -54,8 +54,21 @@ export function SettingsPage() {
   const [price,     setPrice]     = useState("2,500,000");
 
   // Settings
-  const [settings, setSettings] = useState<UserSettings>(getUserSettings());
+  const [settings, setSettings] = useState<UserSettings>({
+    notifications: { booking: true, message: true, system: true, promo: false },
+    privacy: { showOnline: true, showProfile: true, showStats: true },
+    display: { compactMode: false, animationsEnabled: true },
+    language: "vi"
+  });
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (isLoggedIn) {
+      getUserSettings()
+        .then(data => { if (data) setSettings(data); })
+        .catch(err => console.error("Failed to load settings:", err));
+    }
+  }, [isLoggedIn]);
 
   const updateSettings = (path: string[], value: any) => {
     setSettings(prev => {
@@ -74,19 +87,27 @@ export function SettingsPage() {
     if (!user) { toast.error("Vui lòng đăng nhập"); return; }
     setSaving(true);
     try {
-      saveUserProfile({
+      await saveUserProfile({
         id: user.id, name, email: user.email, role,
         avatar: user.avatar, tag: user.tag, tagColor: user.tagColor,
       });
       refreshUser();
       await new Promise(r => setTimeout(r, 600));
       toast.success("✅ Đã cập nhật hồ sơ thành công!");
+    } catch (err) {
+      toast.error("❌ Lỗi khi lưu hồ sơ!");
+      console.error(err);
     } finally { setSaving(false); }
   };
 
-  const handleSaveSettings = () => {
-    saveUserSettings(settings);
-    toast.success("✅ Đã lưu cài đặt!");
+  const handleSaveSettings = async () => {
+    try {
+      await saveUserSettings(settings);
+      toast.success("✅ Đã lưu cài đặt!");
+    } catch (err) {
+      toast.error("❌ Lỗi khi lưu cài đặt!");
+      console.error(err);
+    }
   };
 
   const handleClearData = () => {

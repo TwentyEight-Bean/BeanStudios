@@ -3,7 +3,7 @@ import { prisma } from "@/app/lib/prisma";
 
 // SSG: Fetch data on the server and pass to client component
 export default async function Page() {
-  const blogs = await prisma.blog.findMany({
+  const blogs = await prisma.blogPost.findMany({
     where: { status: "published" },
     orderBy: { createdAt: "desc" },
   });
